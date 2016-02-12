@@ -1,0 +1,18 @@
+#+TITLE: emacs-gargoyle
+
+Gargoyle is an Emacs module
+
+* Introduction
+  Gargoyle is a module to embed a Java VM in a running Emacs
+  instance. It is facilitated by Emacs 25 dynamic modules.
+
+* Emacs API
+  + =gg-java-start= Start the JVM. Gargoyle supports one global
+    instance of a running JVM.
+  + =gg-java-stop= Stop the JVM.
+  + =gg-java-running= Query whether the JVM is running.
+  + =gg-jni-version= Query the JNI version supported in the JVM.
+
+* Related Links
+  + The =modules/mod-test/= subdirectory in the Emacs source tree has
+    an example of writing a dynamic module.
