@@ -39,7 +39,6 @@ gargoyle.so: src/ctrl.o src/main.o
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
+# IF running inside emacs, INSIDE_EMACS must be UNSET for this to work (see Cask Issue #260)
 test: gargoyle.so
-	for i in test/test-*.el ; do
-		$EMACS -batch -l ert -l $i -f ert-run-tests-batch-and-exit
-	done
+	EMACS=$(EMACS) cask exec ert-runner

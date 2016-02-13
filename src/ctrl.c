@@ -50,14 +50,13 @@ int ctrl_start_java(char **err_msg)
 {
     JavaVMInitArgs vm_args;
     JavaVMOption options[1];
-    options[0].optionString = "-Djava.class.path=/usr/lib/java";
+    options[0].optionString = "-Xcheck:jni";
     vm_args.version = JNI_VERSION_1_8;
     vm_args.nOptions = 1;
     vm_args.options = options;
     vm_args.ignoreUnrecognized = 0;
     JNI_CreateJavaVM(&g_vm, (void**) &g_jni_env, &vm_args);
-	assert(g_vm && "VM should not be NULL");
-	return 0;
+	return g_vm != NULL;
 }
 
 int ctrl_stop_java() {
