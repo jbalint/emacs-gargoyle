@@ -39,7 +39,7 @@ JNIEnv *g_jni_env;
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
-	return JNI_VERSION_1_8;
+    return JNI_VERSION_1_8;
 }
 
 void JNI_OnUnload(JavaVM *vm, void *reserved)
@@ -56,11 +56,11 @@ int ctrl_start_java(char **err_msg)
     vm_args.options = options;
     vm_args.ignoreUnrecognized = 0;
     JNI_CreateJavaVM(&g_vm, (void**) &g_jni_env, &vm_args);
-	return g_vm != NULL;
+    return g_vm != NULL;
 }
 
 int ctrl_stop_java() {
     int ret = (*g_vm)->DestroyJavaVM(g_vm);
 	g_vm = NULL;
-	return ret;
+    return ret;
 }

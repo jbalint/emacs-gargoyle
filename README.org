@@ -1,4 +1,5 @@
 #+TITLE: emacs-gargoyle
+#+OPTIONS: tex:t
 
 Gargoyle is an Emacs module
 
@@ -6,13 +7,121 @@ Gargoyle is an Emacs module
   Gargoyle is a module to embed a Java VM in a running Emacs
   instance. It is facilitated by Emacs 25 dynamic modules.
 
+  A bridge to Java is provided.
+
+  Here is a simple demonstration of the Emacs API.
+#+BEGIN_SRC elisp
+  ;; create a new list
+  (let ((my-list (gg-new "java.util.ArrayList")))
+    ;; Java methods start with /
+    (/add my-list "some string")
+    (/add my-list 42)
+    ;; prints "There are 2 elements in the list"
+    (message "There are %d elements in the list" (/size my-list))
+    ;; prints a string representation of the list: [some string, 42]
+    (message "%s" (gg-toString my-list)))
+#+END_SRC
+
 * Emacs API
-  + =gg-java-start= Start the JVM. Gargoyle supports one global
-    instance of a running JVM.
-  + =gg-java-stop= Stop the JVM.
-  + =gg-java-running= Query whether the JVM is running.
-  + =gg-jni-version= Query the JNI version supported in the JVM.
+
+** JVM Control
+   The JVM instance can be controlled as described below.
+
+   + *=gg-java-start=*
+
+    Start the JVM. Gargoyle supports one global instance of a running
+    JVM.
+
+   + *=gg-java-stop=*
+
+     Stop the JVM.
+
+   + *=gg-java-running=*
+
+     Query whether the JVM is running.
+
+   + *=gg-jni-version=*
+
+     Query the JNI version supported in the JVM.
+
+** Class Access and Object Creation
+   Class access and object creation are the basic "entry points" for
+   an application.
+
+   + *=gg-find-class=* /class-name/
+
+     Find a class given it's fully qualified name.
+
+   + *=gg-new=* /class-name-or-object &rest ctor-args/
+
+     Create a new instance of the given class using the passed args to
+     match a constructor method.
+
+   + *=gg-get-field=* /object/ /field-name/
+
+	 Retrieve the value of the named field of the given object.
+
+   + Example: Creating new Java objects:
+
+#+BEGIN_SRC elisp
+  ;; create a new instance of Object
+  (let ((obj-class (gg-find-class "java.lang.Object")))
+    (gg-new obj-class))
+
+  ;; create a new ArrayList with an initial capacity of 10
+  (let ((arraylist-class (gg-find-class "java.util.ArrayList")))
+    (gg-new arraylist-class 10))
+#+END_SRC
+
+*** TODO Document error handling in this API
+
+** General API
+
+   + *=gg-objectp=* /object/
+
+	 Return t if /object/ is a Java object.
+
+   + *=gg-arrayp=* /object/
+
+	 Return t if /object/ is a Java array.
+
+** Convenience API
+
+   + *=gg-toString=* /object/
+
+	 Obtain the string representation of the given object as a Lisp
+     string.
+
+** Calling Java Methods
+
+** Type Mapping
+
+*** Mapping Arguments to Java Calls
+
+*** Mapping Return Values from Java Calls
+
+* Java API
+
+** Calling Elisp Functions
+
+** Variable Assignment
+
+** Function Definition
+
+** Type Mapping
+
+*** Mapping Arguments to Lisp Calls
+
+*** Mapping Return Values from Lisp Calls
+
+* Issues and Limitations
 
 * Related Links
   + The =modules/mod-test/= subdirectory in the Emacs source tree has
     an example of writing a dynamic module.
+  + Java Invocation API
+  + JNI Reference
+
+* TODO
+  + Add aliases for most common classes (Thread, Class, List, etc)
+	+ Could run through most of the JDK or include a customizable list
