@@ -32,8 +32,10 @@ extern JavaVM *g_vm;
 /*
  * the JNI env for the Emacs thread
  */
-extern JNIEnv *g_jni_env;
+extern JNIEnv *g_jni;
 
 int ctrl_start_java(char **err_msg);
 
 void ctrl_stop_java();
+
+const char *ctrl_jni_version();

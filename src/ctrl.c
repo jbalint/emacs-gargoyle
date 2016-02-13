@@ -35,7 +35,7 @@ JavaVM *g_vm;
 /*
  * the JNI env for the Emacs thread
  */
-JNIEnv *g_jni_env;
+JNIEnv *g_jni;
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
@@ -55,12 +55,38 @@ int ctrl_start_java(char **err_msg)
     vm_args.nOptions = 1;
     vm_args.options = options;
     vm_args.ignoreUnrecognized = 0;
-    JNI_CreateJavaVM(&g_vm, (void**) &g_jni_env, &vm_args);
+    JNI_CreateJavaVM(&g_vm, (void**) &g_jni, &vm_args);
     return g_vm != NULL;
 }
 
-int ctrl_stop_java() {
-    int ret = (*g_vm)->DestroyJavaVM(g_vm);
-	g_vm = NULL;
+int ctrl_stop_java()
+{
+    int ret;
+    assert(g_vm);
+    ret = (*g_vm)->DestroyJavaVM(g_vm);
+    g_vm = NULL;
     return ret;
+}
+
+const char *ctrl_jni_version()
+{
+    jint version;
+    assert(g_jni);
+    version = (*g_jni)->GetVersion(g_jni);
+    if (version < 0) {
+        return NULL;
+    }
+    switch (version) {
+    case JNI_VERSION_1_1:
+        return "1.1";
+    case JNI_VERSION_1_2:
+        return "1.2";
+    case JNI_VERSION_1_4:
+        return "1.4";
+    case JNI_VERSION_1_6:
+        return "1.6";
+    case JNI_VERSION_1_8:
+        return "1.8";
+    }
+    return "unknown";
 }

@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <emacs-module.h>
 
@@ -46,9 +47,24 @@ Fgg_java_stop (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 }
 
 static emacs_value
-Fgg_java_running  (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+Fgg_java_running (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
     return env->intern (env, g_vm ? "t" : "nil");
+}
+
+static emacs_value
+Fgg_jni_version (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+	const char *version;
+	if (!g_vm) {
+		return env->intern (env, "nil");
+	}
+	version = ctrl_jni_version();
+	if (version) {
+		return env->make_string (env, version, strlen(version));
+	} else {
+		return env->intern (env, "nil");
+	}
 }
 
 /* Provide FEATURE to Emacs.  */
@@ -83,6 +99,7 @@ emacs_module_init(struct emacs_runtime *ert)
     bind_function(env, "gg-java-start", env->make_function(env, 0, 0, Fgg_java_start, "Start the JVM", NULL));
     bind_function(env, "gg-java-stop", env->make_function(env, 0, 0, Fgg_java_stop, "Stop the JVM", NULL));
     bind_function(env, "gg-java-running", env->make_function(env, 0, 0, Fgg_java_running, "Is the JVM running?", NULL));
+    bind_function(env, "gg-jni-version", env->make_function(env, 0, 0, Fgg_jni_version, "JNI version", NULL));
 
     provide(env, "gargoyle");
 

@@ -3,6 +3,6 @@
   (should (eq nil (gg-java-running)))
   (should (eq t (gg-java-start)))
   (should (eq t (gg-java-running)))
-  (should (eq "1.8" (gg-jni-version)))
+  (should (string-equal "1.8" (gg-jni-version)))
   (should (eq t (gg-java-stop)))
   (should (eq nil (gg-java-running))))
