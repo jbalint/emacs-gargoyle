@@ -5,4 +5,7 @@
   (should (eq t (gg-java-running)))
   (should (string-equal "1.8" (gg-jni-version)))
   (should (eq t (gg-java-stop)))
-  (should (eq nil (gg-java-running))))
+  (should (eq nil (gg-java-running)))
+  (condition-case err (gg-java-start)
+	(error
+	 (should (string-equal "JVM may not be restarted" (cdr err))))))

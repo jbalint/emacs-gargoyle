@@ -23,6 +23,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <jni.h>
@@ -46,17 +47,42 @@ void JNI_OnUnload(JavaVM *vm, void *reserved)
 {
 }
 
+int gg_vfprintf(FILE *stream, const char *format, va_list ap)
+{
+    return vfprintf(stderr, format, ap);
+}
+
+/*
+ * Start the JVM.
+ *
+ * @return 0 for OK or a <0 JNI error code on failure
+ */
 int ctrl_start_java(char **err_msg)
 {
+    jint ret;
     JavaVMInitArgs vm_args;
-    JavaVMOption options[1];
-    options[0].optionString = "-Xcheck:jni";
+    JavaVMOption options[] = {
+        /* {.optionString = "-verbose:class"}, */
+        /* {.optionString = "-verbose:jni"}, */
+        {.optionString = "-Xcheck:jni"}
+    };
+
+    /* options[0].optionString = "-Xcheck:jni"; */
+    /* options[1].optionString = "vfprintf"; */
+    /* options[1].extraInfo = gg_vfprintf; */
     vm_args.version = JNI_VERSION_1_8;
     vm_args.nOptions = 1;
     vm_args.options = options;
     vm_args.ignoreUnrecognized = 0;
-    JNI_CreateJavaVM(&g_vm, (void**) &g_jni, &vm_args);
-    return g_vm != NULL;
+
+    ret = JNI_CreateJavaVM(&g_vm, (void**) &g_jni, &vm_args);
+
+    if (ret == JNI_OK) {
+        ret = (*g_jni)->EnsureLocalCapacity(g_jni, 1000);
+        assert((ret == JNI_OK) && "Workaround to have enough stack space until we manage this properly");
+    }
+
+    return ret;
 }
 
 int ctrl_stop_java()
@@ -64,7 +90,9 @@ int ctrl_stop_java()
     int ret;
     assert(g_vm);
     ret = (*g_vm)->DestroyJavaVM(g_vm);
+    assert(ret == JNI_OK);
     g_vm = NULL;
+    g_jni = NULL;
     return ret;
 }
 

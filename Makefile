@@ -31,14 +31,16 @@ JVM_LIB_DIR=$(JAVA_HOME)/jre/lib/amd64/server
 CFLAGS  = -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE)/linux -I$(EMACS_INCLUDE) -Isrc -std=gnu99 -ggdb3 -Wall -fPIC -D_POSIX_C_SOURCE
 LDFLAGS = -L$(JVM_LIB_DIR)
 
-all: gargoyle.so
+all: gargoyle-dm.so
 
-gargoyle.so: src/ctrl.o src/main.o
-	$(LD) -shared $(LDFLAGS) -o $@ $^ -ljvm
+gargoyle-dm.so: src/ctrl.o src/main.o
+	$(LD) -shared $(LDFLAGS) -o $@ $^ -ljvm -ljsig
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 # IF running inside emacs, INSIDE_EMACS must be UNSET for this to work (see Cask Issue #260)
-test: gargoyle.so
-	EMACS=$(EMACS) cask exec ert-runner
+check: gargoyle-dm.so
+	# Separate vm from no-vm tests (this requires fixed ert-runner: https://github.com/rejeep/ert-runner.el/pull/26)
+	ls test/no-vm/*-test.el | EMACS=$(EMACS) xargs -n 1 cask exec ert-runner $i
+	EMACS=$(EMACS) cask exec ert-runner -l test/start-vm.el test/*-test.el

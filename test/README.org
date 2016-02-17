@@ -1,0 +1,13 @@
+Gargoyle Tests
+
+* Running
+  Tests are run with =ert-runner= and can be run with the =check=
+  target in the =Makefile=.
+
+* VM vs NoVM tests
+  Some tests require being able to control the VM. Given that the VM
+  can only be started once per process, these tests must run in their
+  own Emacs process. This separation is implemented by putting all the
+  NoVM tests in the =no-vm= subdirectory. These tests will NOT have
+  the Gargoyle VM started for them automatically as all other tests
+  will.
