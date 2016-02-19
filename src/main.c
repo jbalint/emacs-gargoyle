@@ -24,11 +24,14 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <emacs-module.h>
 
 #include "ctrl.h"
+
+#define ASSERT_JVM_RUNNING(E) if (!jvm_running(E)) { return NULL; }
 
 /* Emacs won't load the plugin without this: (error "Module /home/jbalint/sw/emacs-gargoyle/gargoyle.so is not GPL compatible") */
 int plugin_is_GPL_compatible;
@@ -144,6 +147,53 @@ bind_function (emacs_env *env, const char *name, emacs_value Sfun)
 
 #include <jni.h>
 
+/* finalizer needed as userptr finalizer isn't currently optional in dynamic modules */
+void noop_finalizer(void *x)
+{
+}
+
+/* create a list */
+emacs_value list(emacs_env *env, int n, ...)
+{
+    va_list ap;
+    emacs_value list;
+    int i;
+    emacs_value *args;
+
+    va_start(ap, n);
+
+    args = malloc(n * sizeof(emacs_value));
+    assert(args);
+
+    for (i = 0; i < n; ++i) {
+        args[i] = va_arg(ap, emacs_value);
+    }
+
+    va_end(ap);
+
+    list = env->funcall(env, env->intern(env, "list"), n, args);
+
+    assert(list);
+
+    free(args);
+
+    return list;
+}
+
+int type_is(emacs_env *env, emacs_value v, const char *type_name)
+{
+    static char errmsg[50];
+    emacs_value t = env->type_of(env, v);
+    if (!env->eq(env, t, env->intern(env, type_name))) {
+        sprintf(errmsg, "Expected %s", type_name);
+        env->non_local_exit_signal(env, env->intern(env, "wrong-type-argument"),
+                                   list(env, 1, env->make_string(env, errmsg, strlen(errmsg))));
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 /*
  * Wrap a jobject pointer to a Lisp "Java object".
  */
@@ -151,7 +201,7 @@ emacs_value new_java_object(emacs_env *env, jobject o)
 {
     emacs_value args[1];
     emacs_value wrapped;
-    args[0] = env->make_user_ptr(env, NULL, o);
+    args[0] = env->make_user_ptr(env, noop_finalizer, o);
     wrapped = env->funcall(env, env->intern(env, "gg--new-object"), 1, args);
     /*
      * TODO  TODO  TODO  TODO  TODO  TODO  TODO 
@@ -164,21 +214,22 @@ emacs_value new_java_object(emacs_env *env, jobject o)
 
 /*
  * Assert that the JVM is running. If it's not (error "Gargoyle JVM
- * not running") is thrown.
+ * not running") is thrown. Return 1/true or 0/false for JVM running.
  */
-void assert_jvm_running(emacs_env *env)
+int jvm_running(emacs_env *env)
 {
     static const char *err_msg = "Gargoyle JVM not running";
     emacs_value wrapped_err_msg;
     if (g_jni) {
-        return;
+        return 1;
     }
     wrapped_err_msg = env->make_string(env, err_msg, strlen(err_msg));
     assert(wrapped_err_msg);
     env->non_local_exit_signal(env, env->intern(env, "error"), wrapped_err_msg);
+    return 0;
 }
 
-void handle_exception(emacs_env *env)
+int handle_exception(emacs_env *env)
 {
     jthrowable exception;
     exception = (*g_jni)->ExceptionOccurred(g_jni);
@@ -189,7 +240,9 @@ void handle_exception(emacs_env *env)
         (*g_jni)->ExceptionClear(g_jni);
         env->non_local_exit_signal(env, env->intern(env, "java-exception"),
                                    new_java_object(env, exception));
+        return 1;
     }
+    return 0;
 }
 
 #define MAX_CLASS_NAME_SIZE 128
@@ -197,7 +250,7 @@ static emacs_value
 Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
     static char class_name[MAX_CLASS_NAME_SIZE];
-    ptrdiff_t size;
+    ptrdiff_t size = MAX_CLASS_NAME_SIZE;
     bool ok;
     jclass class;
     int i;
@@ -207,7 +260,11 @@ Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
      */
     int past_class = 0;
 
-    assert_jvm_running(env);
+    if (!type_is(env, args[0], "string")) {
+        return NULL;
+    }
+
+    ASSERT_JVM_RUNNING(env);
 
     ok = env->copy_string_contents(env, args[0], class_name, &size);
     assert(ok);
@@ -220,17 +277,57 @@ Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
             class_name[i] = '$';
         } else {
             class_name[i] = '/';
+            if (class_name[i+1] >= 65 && class_name[i+1] <= 90) {
+                past_class = 1;
+            }
         }
     }
     class = (*g_jni)->FindClass(g_jni, class_name);
     if (class) {
         return new_java_object(env, class);
     } else {
-        /* this will longjmp */
         handle_exception(env);
         return NULL;
     }
 }
+
+static emacs_value
+Fgg_toString_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+    jclass c;
+    jmethodID mid_toString;
+    jstring asString;
+    jobject tgt;
+    emacs_value e_string;
+    const char *string;
+    jboolean isCopy;
+
+    ASSERT_JVM_RUNNING(env);
+
+    /* get the method reference */
+    c = (*g_jni)->FindClass(g_jni, "java/lang/Object");
+    if (handle_exception(env)) { return NULL; }
+    assert(c);
+    mid_toString = (*g_jni)->GetMethodID(g_jni, c, "toString", "()Ljava/lang/String;");
+    if (handle_exception(env)) { return NULL; }
+    assert(mid_toString);
+
+    /* call toString */
+    tgt = env->get_user_ptr(env, args[0]);
+    asString = (*g_jni)->CallObjectMethod(g_jni, tgt, mid_toString);
+    if (handle_exception(env)) { return NULL; }
+
+    /* copy the string from Java to Lisp */
+    string = (*g_jni)->GetStringUTFChars(g_jni, asString, &isCopy);
+    if (handle_exception(env)) { return NULL; }
+    assert(string);
+    e_string = env->make_string(env, string, strlen(string));
+    assert(e_string);
+    (*g_jni)->ReleaseStringUTFChars(g_jni, asString, string);
+
+    return e_string;
+}
+
 /*****************************/
 
 /* Module init function */
@@ -239,13 +336,14 @@ emacs_module_init(struct emacs_runtime *ert)
 {
     emacs_env *env = ert->get_environment(ert);
 
-    fprintf(stderr, "Initializing Gargoyle dynamic module\n");
+    //fprintf(stderr, "Initializing Gargoyle dynamic module\n");
     bind_function(env, "gg-java-start", env->make_function(env, 0, 0, Fgg_java_start, "Start the JVM", NULL));
     bind_function(env, "gg-java-stop", env->make_function(env, 0, 0, Fgg_java_stop, "Stop the JVM", NULL));
     bind_function(env, "gg-java-running", env->make_function(env, 0, 0, Fgg_java_running, "Is the JVM running?", NULL));
     bind_function(env, "gg-jni-version", env->make_function(env, 0, 0, Fgg_jni_version, "JNI version", NULL));
 
     bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
+    bind_function(env, "gg--toString-raw", env->make_function(env, 1, 1, Fgg_toString_raw, "Return a string representation of the raw/userptr object", NULL));
 
     provide(env, "gargoyle-dm");
 

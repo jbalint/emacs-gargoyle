@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 # Set this externally until Emacs 25 becomes widely used
-EMACS=/home/jbalint/sw/emacs-sw/emacs/src/emacs
+EMACS ?= /home/jbalint/sw/emacs-sw/emacs/src/emacs
 EMACS_INCLUDE=/home/jbalint/sw/emacs-sw/emacs/src
 
 JAVA_INCLUDE=$(JAVA_HOME)/include
@@ -39,8 +39,12 @@ gargoyle-dm.so: src/ctrl.o src/main.o
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-# IF running inside emacs, INSIDE_EMACS must be UNSET for this to work (see Cask Issue #260)
-check: gargoyle-dm.so
-	# Separate vm from no-vm tests (this requires fixed ert-runner: https://github.com/rejeep/ert-runner.el/pull/26)
+# Separate vm from no-vm tests (this requires fixed ert-runner: https://github.com/rejeep/ert-runner.el/pull/26)
+check-no-vm: gargoyle-dm.so
 	ls test/no-vm/*-test.el | EMACS=$(EMACS) xargs -n 1 cask exec ert-runner $i
+
+# IF running inside emacs, INSIDE_EMACS must be UNSET for this to work (see Cask Issue #260)
+check-vm: gargoyle-dm.so
 	EMACS=$(EMACS) cask exec ert-runner -l test/start-vm.el test/*-test.el
+
+check: check-no-vm check-vm

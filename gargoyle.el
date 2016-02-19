@@ -55,7 +55,14 @@
 
 (defun gg--new-object (ptr)
   "Create a new object from a raw JNI pointer."
-  `(gg-obj ,ptr))
+  (list 'gg-obj ptr))
+
+(defun gg-toString (obj)
+  "Return the string representation of the object."
+  (gg--toString-raw (cadr obj)))
+
+(define-error 'java-exception
+  "A Java exception. The cdr is the exception.")
 
 (provide 'gargoyle)
 
