@@ -185,9 +185,9 @@ int type_is(emacs_env *env, emacs_value v, const char *type_name)
     static char errmsg[50];
     emacs_value t = env->type_of(env, v);
     if (!env->eq(env, t, env->intern(env, type_name))) {
-        sprintf(errmsg, "Expected %s", type_name);
+        sprintf(errmsg, "Expected %s:", type_name);
         env->non_local_exit_signal(env, env->intern(env, "wrong-type-argument"),
-                                   list(env, 1, env->make_string(env, errmsg, strlen(errmsg))));
+                                   list(env, 3, env->make_string(env, errmsg, strlen(errmsg)), t, v));
         return 0;
     } else {
         return 1;
@@ -243,6 +243,30 @@ int handle_exception(emacs_env *env)
         return 1;
     }
     return 0;
+}
+
+static emacs_value
+Fgg_new_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+    jclass class;
+    jmethodID mid;
+    jobject obj;
+
+    if (!type_is(env, args[0], "user-ptr")) {
+        return NULL;
+    }
+
+    ASSERT_JVM_RUNNING(env);
+
+    class = env->get_user_ptr(env, args[0]);
+
+    mid = (*g_jni)->GetMethodID(g_jni, class, "<init>", "()V");
+    if (handle_exception(env)) { return NULL; }
+
+    obj = (*g_jni)->NewObject(g_jni, class, mid);
+    if (handle_exception(env)) { return NULL; }
+
+    return new_java_object(env, obj);
 }
 
 #define MAX_CLASS_NAME_SIZE 128
@@ -344,6 +368,7 @@ emacs_module_init(struct emacs_runtime *ert)
 
     bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
     bind_function(env, "gg--toString-raw", env->make_function(env, 1, 1, Fgg_toString_raw, "Return a string representation of the raw/userptr object", NULL));
+    bind_function(env, "gg--new-raw", env->make_function(env, 1, 1, Fgg_new_raw, "Create a new instance of the given class", NULL));
 
     provide(env, "gargoyle-dm");
 

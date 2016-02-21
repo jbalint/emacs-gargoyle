@@ -61,6 +61,16 @@
   "Return the string representation of the object."
   (gg--toString-raw (cadr obj)))
 
+(defun gg-new (class-or-name &rest ctor-args)
+  "Create a new instance."
+  (let ((class (cond
+				((stringp class-or-name) (gg-find-class class-or-name))
+				((gg-objectp class-or-name) class-or-name)
+				(t (signal 'wrong-type-argument `("Expected class object or class name string:"
+												  ,(type-of class-or-name)
+												  ,class-or-name))))))
+	(gg--new-raw (cadr class))))
+
 (define-error 'java-exception
   "A Java exception. The cdr is the exception.")
 
