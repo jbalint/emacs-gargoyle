@@ -1,0 +1,85 @@
+
+This document describes the interface mapping types of arguments for
+Lisp calls to Java methods.
+
+* Concepts
+
+  When calling Java methods from Lisp, the arguments can be Lisp
+  values or Java objects. The type mapping determines which versions
+  of an overloaded methods are valid for the given call and how Lisp
+  values are transformed to Java objects.
+
+  The *=gg-to-java-mapping-alist=* is an /alist/ wherein each element's
+  key is a predicate which tests whether the value can be mapped by
+  this mapping. The value is a function which does the mapping.
+
+* Use Cases and Examples
+
+** Lisp list as Java =List=
+
+   If we wish to map Lisp lists to Java =List=s, we can use the type
+   mapping facility. We provide a predicate and a function to perform
+   the mapping:
+
+#+BEGIN_SRC elisp
+  ((listp v)
+   (let ((newlist (gg-new "java.util.LinkedList")))
+     (-map (lambda (it) (/add newlist it)))
+     newlist))
+#+END_SRC
+
+** List string as Java =String=
+
+   The built-in mapping handles Lisp strings using this facility.
+
+#+BEGIN_SRC elisp
+  (add-to-list 'gg-to-java-mapping-alist
+               '(stringp . gg-newString))
+#+END_SRC
+
+* Implementation
+
+  + The lowest level of calling a method is =gg--call-method-raw=
+    which takes the following arguments:
+	+ =target= The raw object on which the method will be called.
+	+ =methodID= The raw method ID indicating which method to call.
+	+ =args= Ordered list of pairs. First element is a symbol
+      indicating the type of the value. The second element is the
+      value. Possible types are as follow (defined by =jvalue= in
+      =jni.h=):
+	  + =z= A boolean value given as one of the following:
+		+ an integer in which case 0 is false and any other value is
+          true (JNI interpretation)
+		+ a symbol =t= to indicate true
+		+ =nil= to indicate false
+	  + =b= A byte value given as an integer.
+	  + =c= A char value given as an integer.
+	  + =s= A short value given as an integer.
+	  + =i= An int value given as an integer.
+	  + =j= A long value given as an integer.
+	  + =f= A float value given as a float.
+	  + =d= A double value given as a float.
+	  + =l= A raw Java object given as a userptr.
+
+  + The type mapping takes place via (>>>?)
+
+* Further Work
+
+  + Emacs defines the limits of integers (c.f. =most-positive-fixnum=)
+    more narrowly than Java. Some constants may be defined outside
+    this range and should be able to be represented as strings in Lisp
+    and mapped to long values in C/Java.
+
+#+BEGIN_SRC elisp
+  (defun transformit (it)
+    "a STRING isntead")
+
+  (setq my-alist
+        '((listp . transformit)))
+
+  (defun transform-value-accordingly (it)
+    "Transform a value according to the first applicable mapping in gg-lisp-to-java-alist"
+    (let* ((pred (lambda (mapping) (funcall (car mapping) it)))
+           (transformer (cdr (-first pred my-alist))))
+      (funcall transformer it)))
+#+END_SRC
