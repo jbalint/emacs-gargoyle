@@ -34,7 +34,7 @@ Lisp calls to Java methods.
 
 #+BEGIN_SRC elisp
   (add-to-list 'gg-to-java-mapping-alist
-               '(stringp . gg-newString))
+               '(stringp . gg-new-string))
 #+END_SRC
 
 * Implementation

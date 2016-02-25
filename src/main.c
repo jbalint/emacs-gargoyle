@@ -269,6 +269,24 @@ Fgg_new_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
     return new_java_object(env, obj);
 }
 
+static emacs_value
+Fgg_new_string (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+	jstring str;
+	char *raw_str;
+	ptrdiff_t str_size;
+	env->copy_string_contents(env, args[0], NULL, &str_size);
+	raw_str = malloc(str_size);
+	assert(raw_str);
+	env->copy_string_contents(env, args[0], raw_str, &str_size);
+	str = (*g_jni)->NewStringUTF(g_jni, raw_str);
+	free(raw_str); /* necessary whether there's an error or not */
+	if (handle_exception(env)) {
+		return NULL;
+	}
+	return new_java_object(env, str);
+}
+
 #define MAX_CLASS_NAME_SIZE 128
 static emacs_value
 Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
@@ -369,6 +387,7 @@ emacs_module_init(struct emacs_runtime *ert)
     bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
     bind_function(env, "gg--toString-raw", env->make_function(env, 1, 1, Fgg_toString_raw, "Return a string representation of the raw/userptr object", NULL));
     bind_function(env, "gg--new-raw", env->make_function(env, 1, 1, Fgg_new_raw, "Create a new instance of the given class", NULL));
+    bind_function(env, "gg-new-string", env->make_function(env, 1, 1, Fgg_new_string, "Create a new java.lang.String from the Lisp string", NULL));
 
     provide(env, "gargoyle-dm");
 
