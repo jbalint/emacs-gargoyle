@@ -1,0 +1,20 @@
+#+TITLE: Gargoyle Internals
+
+A collection of descriptions of internals.
+
+* Lisp Representation of Java Objects
+
+  In C code, a Java object is represented by a pointer. When objects
+  are returned from C code, they are wrapped as Lisp structures by
+  calling =gg--new-object=. When we say "Java object", we are
+  generally referring to a Lisp-wrapped version of the object. When we
+  say *raw object*, we are referring to the List representation of the
+  pointer.
+
+  Functions ending with =-raw= accept /raw objects/ as arguments. All
+  others accept Java objects.
+
+  c.f. =gg-objectp=
+
+* Glossary
+  + *raw object* - a =userptr= of a =jobject=.
