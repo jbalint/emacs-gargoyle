@@ -6,3 +6,6 @@
 
 *.so
 *.o
+
+# Org-generated HTML
+*.html
