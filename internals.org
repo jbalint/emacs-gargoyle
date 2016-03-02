@@ -2,6 +2,43 @@
 
 A collection of descriptions of internals.
 
+* Java Class Hierarchy
+
+  A copy of the Java class hierarchy is (lazily) maintained in the
+  Lisp address space.
+
+  A class is a plist:
+
+#+BEGIN_SRC elisp
+    (:name java.util.ArrayList
+     :superclass java.util.AbstractList
+     :interfaces (java.io.Serializable
+                  java.lang.Cloneable
+                  java.lang.Iterable
+                  java.util.Collection
+                  java.util.List
+                  java.util.RandomAccess)
+     :methods methodList
+     :fields fieldList)
+#+END_SRC
+
+  A method is a plist (TODO put modifiers here?):
+
+#+BEGIN_SRC elisp
+  (:name iterator
+   :returnType java.util.Iterator
+   :argumentTypes nil)
+
+  (:name contains
+   :returnType boolean
+   :argumentTypes (java.lang.Object))
+#+END_SRC
+
+  A field is a plist:
+
+#+BEGIN_SRC elisp
+#+END_SRC
+
 * Lisp Representation of Java Objects
 
   In C code, a Java object is represented by a pointer. When objects
@@ -17,4 +54,5 @@ A collection of descriptions of internals.
   c.f. =gg-objectp=
 
 * Glossary
-  + *raw object* - a =userptr= of a =jobject=.
+
+  + *raw object* - a List =userptr= of a C =jobject=.

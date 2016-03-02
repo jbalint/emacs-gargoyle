@@ -1,67 +1,116 @@
+#+TITLE: Type Mappings in Gargoyle
 
-This document describes the interface mapping types of arguments for
-Lisp calls to Java methods.
+This document describes the facility mapping types in two cases:
++ E2J (Emacs to Java) - arguments from Lisp calls to Java methods
++ J2E (Java to Emacs) - values returned from calls to Java methods to
+  Lisp code
 
-* Concepts
+* E2J Type Mapping
+
+** E2J Mapping Concepts
 
   When calling Java methods from Lisp, the arguments can be Lisp
-  values or Java objects. The type mapping determines which versions
-  of an overloaded methods are valid for the given call and how Lisp
-  values are transformed to Java objects.
+  values or [Lisp representations of] Java objects. The type mapping
+  determines which versions of an overloaded methods are valid for the
+  given call and how Lisp values are transformed to Java objects.
 
-  The *=gg-to-java-mapping-alist=* is an /alist/ wherein each element's
-  key is a predicate which tests whether the value can be mapped by
-  this mapping. The value is a function which does the mapping.
+  We consider the following elements of a method call:
+  + A (E2J) /type mapping/ is an entry in the =gg-to-java-mappings=
+    list
+  + A /target object/ upon which a method is being call
+  + The /target type/ is the Java class of the target object
+  + The /argument list/ is the list of arguments to the Lisp call
+  + A set of /candidate methods/ which are associated with the target
+    type corresponding to the method name begin called and arity equal
+    to the length of the argument list
+  + A /candidate list of types/ corresponding to the argument types
+    declared for each candidate method
+  + The /target method/ is the Java method ID of the candidate method
+    that is chosen to be called
 
-* Use Cases and Examples
+  The variable *=gg-to-java-mappings=* is a list detailing possible
+  mappings to a Java types. Each element is a 3-element list:
+  1. A symbol representing the Java class of objects to be created by
+     the mapping
+  2. A predicate which tests whether a value can be mapped to the type
+     specified by this mapping
+  3. A function (symbol or subr) which does the mapping from Lisp
+     value to Java object
 
-** Lisp list as Java =List=
+** E2J Use Cases and Examples
 
-   If we wish to map Lisp lists to Java =List=s, we can use the type
-   mapping facility. We provide a predicate and a function to perform
-   the mapping:
-
-#+BEGIN_SRC elisp
-  ((listp v)
-   (let ((newlist (gg-new "java.util.LinkedList")))
-     (-map (lambda (it) (/add newlist it)))
-     newlist))
-#+END_SRC
-
-** List string as Java =String=
+*** Lisp string as Java =String=
 
    The built-in mapping handles Lisp strings using this facility.
 
 #+BEGIN_SRC elisp
   (add-to-list 'gg-to-java-mapping-alist
-               '(stringp . gg-new-string))
+               '(java.util.String stringp gg-new-string))
 #+END_SRC
 
-* Implementation
+*** Lisp list as Java =List=
 
-  + The lowest level of calling a method is =gg--call-method-raw=
-    which takes the following arguments:
-	+ =target= The raw object on which the method will be called.
-	+ =methodID= The raw method ID indicating which method to call.
-	+ =args= Ordered list of pairs. First element is a symbol
-      indicating the type of the value. The second element is the
-      value. Possible types are as follow (defined by =jvalue= in
-      =jni.h=):
-	  + =z= A boolean value given as one of the following:
-		+ an integer in which case 0 is false and any other value is
-          true (JNI interpretation)
-		+ a symbol =t= to indicate true
-		+ =nil= to indicate false
-	  + =b= A byte value given as an integer.
-	  + =c= A char value given as an integer.
-	  + =s= A short value given as an integer.
-	  + =i= An int value given as an integer.
-	  + =j= A long value given as an integer.
-	  + =f= A float value given as a float.
-	  + =d= A double value given as a float.
-	  + =l= A raw Java object given as a userptr.
+   If we wish to map Lisp lists to Java =List=s can add a mapping:
 
-  + The type mapping takes place via (>>>?)
+#+BEGIN_SRC elisp
+  (defun my-list-to-java-LinkedList (l)
+    (let ((newlist (gg-new "java.util.LinkedList")))
+      (-map (lambda (it) (/add newlist it)) l)
+      newlist))
+
+  (add-to-list 'gg-to-java-mappings
+               '(java.util.LinkedList ;; type the mapping creates
+                 listp ;; predicate whether the value can map to this type
+                 my-list-to-java-LinkedList))
+#+END_SRC
+
+   N.B. This mapping declares the 
+
+*** Lisp string of comma-separated string values as Java =List=
+
+#+BEGIN_SRC elisp
+  (add-to-list 'gg-to-java-mappings
+               '(java.util.LinkedList
+                 stringp
+                 (lambda (s)
+                   (let ((l (split-string s ",")))
+                     ;; this function is defined in the previous example
+                     (my-list-to-java-LinkedList l)))))
+#+END_SRC
+
+** Target Method Selection Algorithm
+
+*** Building the Set of Candidate Methods
+
+	Given the in-memory structure of the class hierarchy, TODO ...
+
+** Implementation
+
+   + The lowest level of calling a method is =gg--call-method-raw=
+     which takes the following arguments:
+	 + =target= The raw object on which the method will be called.
+	 + =methodID= The raw method ID indicating which method to call.
+	 + =args= Ordered list of pairs. First element is a symbol
+       indicating the type of the value. The second element is the
+       value. Possible types are as follow (defined by =jvalue= in
+       =jni.h=):
+	   + =z= A boolean value given as one of the following:
+		 + an integer in which case 0 is false and any other value is
+           true (JNI interpretation)
+		 + a symbol =t= to indicate true
+		 + =nil= to indicate false
+	   + =b= A byte value given as an integer.
+	   + =c= A char value given as an integer.
+	   + =s= A short value given as an integer.
+	   + =i= An int value given as an integer.
+	   + =j= A long value given as an integer.
+	   + =f= A float value given as a float.
+	   + =d= A double value given as a float.
+	   + =l= A raw Java object given as a userptr.
+
+   + The type mapping takes place via (>>>?)
+
+* J2E Type Mapping
 
 * Further Work
 

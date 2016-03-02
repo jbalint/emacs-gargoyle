@@ -47,6 +47,12 @@
 
 (require 'gargoyle-dm)
 
+(defvar gg-to-java-mappings nil
+  "Mappings to Java objects")
+
+(defvar gg--class-hierarchy nil
+  "")
+
 (defun gg-objectp (object)
   "Return t if `object' is a Java object."
   (and
