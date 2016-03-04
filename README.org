@@ -12,7 +12,7 @@ Gargoyle is an Emacs module
   Here is a simple demonstration of the Emacs API.
 #+BEGIN_SRC elisp
   ;; create a new list
-  (let ((my-list (gg-new "java.util.ArrayList")))
+  (let ((my-list (gg-new 'java.util.ArrayList)))
     ;; Java methods start with /
     (/add my-list "some string")
     (/add my-list 42)
@@ -29,8 +29,8 @@ Gargoyle is an Emacs module
 
    + *=gg-java-start=*
 
-    Start the JVM. Gargoyle supports one global instance of a running
-    JVM.
+     Start the JVM. Gargoyle supports one global instance of a running
+     JVM. The JVM cannot be started more than once per process.
 
    + *=gg-java-stop=*
 
@@ -65,11 +65,11 @@ Gargoyle is an Emacs module
 
 #+BEGIN_SRC elisp
   ;; create a new instance of Object
-  (let ((obj-class (gg-find-class "java.lang.Object")))
+  (let ((obj-class (gg-find-class 'java.lang.Object)))
     (gg-new obj-class))
 
   ;; create a new ArrayList with an initial capacity of 10
-  (let ((arraylist-class (gg-find-class "java.util.ArrayList")))
+  (let ((arraylist-class (gg-find-class 'java.util.ArrayList)))
     (gg-new arraylist-class 10))
 #+END_SRC
 
@@ -119,8 +119,10 @@ Gargoyle is an Emacs module
 * Related Links
   + The =modules/mod-test/= subdirectory in the Emacs source tree has
     an example of writing a dynamic module.
+  + [[https://github.com/emacs-mirror/emacs/blob/master/src/emacs-module.h][emacs-module.h]]
   + Java Invocation API
-  + JNI Reference
+  + [[http://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/jniTOC.html][JNI Reference]]
+  + [[http://docs.oracle.com/javase/7/docs/platform/jvmti/jvmti.html][JVM TI]]
 
 * TODO
   + Add aliases for most common classes (Thread, Class, List, etc)

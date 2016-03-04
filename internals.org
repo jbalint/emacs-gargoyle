@@ -22,7 +22,7 @@ A collection of descriptions of internals.
      :fields fieldList)
 #+END_SRC
 
-  A method is a plist (TODO put modifiers here?):
+  A method is a plist (TODO put modifiers here):
 
 #+BEGIN_SRC elisp
   (:name iterator
@@ -37,6 +37,8 @@ A collection of descriptions of internals.
   A field is a plist:
 
 #+BEGIN_SRC elisp
+  (:name name
+   :type java.lang.String)
 #+END_SRC
 
 * Lisp Representation of Java Objects
