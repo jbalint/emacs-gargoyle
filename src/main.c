@@ -29,9 +29,9 @@
 
 #include <emacs-module.h>
 
+#include "class.h"
 #include "ctrl.h"
-
-#define ASSERT_JVM_RUNNING(E) if (!jvm_running(E)) { return NULL; }
+#include "el_util.h"
 
 /* Emacs won't load the plugin without this: (error "Module /home/jbalint/sw/emacs-gargoyle/gargoyle.so is not GPL compatible") */
 int plugin_is_GPL_compatible;
@@ -147,104 +147,6 @@ bind_function (emacs_env *env, const char *name, emacs_value Sfun)
 
 #include <jni.h>
 
-/* finalizer needed as userptr finalizer isn't currently optional in dynamic modules */
-void noop_finalizer(void *x)
-{
-}
-
-/* create a list */
-emacs_value list(emacs_env *env, int n, ...)
-{
-    va_list ap;
-    emacs_value list;
-    int i;
-    emacs_value *args;
-
-    va_start(ap, n);
-
-    args = malloc(n * sizeof(emacs_value));
-    assert(args);
-
-    for (i = 0; i < n; ++i) {
-        args[i] = va_arg(ap, emacs_value);
-    }
-
-    va_end(ap);
-
-    list = env->funcall(env, env->intern(env, "list"), n, args);
-
-    assert(list);
-
-    free(args);
-
-    return list;
-}
-
-int type_is(emacs_env *env, emacs_value v, const char *type_name)
-{
-    static char errmsg[50];
-    emacs_value t = env->type_of(env, v);
-    if (!env->eq(env, t, env->intern(env, type_name))) {
-        sprintf(errmsg, "Expected %s:", type_name);
-        env->non_local_exit_signal(env, env->intern(env, "wrong-type-argument"),
-                                   list(env, 3, env->make_string(env, errmsg, strlen(errmsg)), t, v));
-        return 0;
-    } else {
-        return 1;
-    }
-}
-
-/*
- * Wrap a jobject pointer to a Lisp "Java object".
- */
-emacs_value new_java_object(emacs_env *env, jobject o)
-{
-    emacs_value args[1];
-    emacs_value wrapped;
-    args[0] = env->make_user_ptr(env, noop_finalizer, o);
-    wrapped = env->funcall(env, env->intern(env, "gg--new-object"), 1, args);
-    /*
-     * TODO  TODO  TODO  TODO  TODO  TODO  TODO 
-     * Map the methods available on this object (and static methods if
-     * it's a class) into the Lisp environment
-     */
-    assert(wrapped);
-    return wrapped;
-}
-
-/*
- * Assert that the JVM is running. If it's not (error "Gargoyle JVM
- * not running") is thrown. Return 1/true or 0/false for JVM running.
- */
-int jvm_running(emacs_env *env)
-{
-    static const char *err_msg = "Gargoyle JVM not running";
-    emacs_value wrapped_err_msg;
-    if (g_jni) {
-        return 1;
-    }
-    wrapped_err_msg = env->make_string(env, err_msg, strlen(err_msg));
-    assert(wrapped_err_msg);
-    env->non_local_exit_signal(env, env->intern(env, "error"), wrapped_err_msg);
-    return 0;
-}
-
-int handle_exception(emacs_env *env)
-{
-    jthrowable exception;
-    exception = (*g_jni)->ExceptionOccurred(g_jni);
-    if (exception) {
-        if /* should I print exceptions? */ (1) {
-            (*g_jni)->ExceptionDescribe(g_jni);
-        }
-        (*g_jni)->ExceptionClear(g_jni);
-        env->non_local_exit_signal(env, env->intern(env, "java-exception"),
-                                   new_java_object(env, exception));
-        return 1;
-    }
-    return 0;
-}
-
 static emacs_value
 Fgg_new_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
@@ -285,52 +187,6 @@ Fgg_new_string (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 		return NULL;
 	}
 	return new_java_object(env, str);
-}
-
-#define MAX_CLASS_NAME_SIZE 128
-static emacs_value
-Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
-{
-    static char class_name[MAX_CLASS_NAME_SIZE];
-    ptrdiff_t size = MAX_CLASS_NAME_SIZE;
-    bool ok;
-    jclass class;
-    int i;
-    /* Are we past the class when transforming class name string? If
-     * so, use "$" instead of "/". Eg. com.x.Class.Other ->
-     * com/x/Class$Other
-     */
-    int past_class = 0;
-
-    if (!type_is(env, args[0], "string")) {
-        return NULL;
-    }
-
-    ASSERT_JVM_RUNNING(env);
-
-    ok = env->copy_string_contents(env, args[0], class_name, &size);
-    assert(ok);
-    assert(size < MAX_CLASS_NAME_SIZE);
-
-    /* replace . with / to conform to internal naming convention */
-    for (i = 0; i < MAX_CLASS_NAME_SIZE && class_name[i]; ++i) {
-        if (class_name[i] != '.') continue;
-        if (past_class) {
-            class_name[i] = '$';
-        } else {
-            class_name[i] = '/';
-            if (class_name[i+1] >= 65 && class_name[i+1] <= 90) {
-                past_class = 1;
-            }
-        }
-    }
-    class = (*g_jni)->FindClass(g_jni, class_name);
-    if (class) {
-        return new_java_object(env, class);
-    } else {
-        handle_exception(env);
-        return NULL;
-    }
 }
 
 static emacs_value
