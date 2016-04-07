@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include <jni.h>
+#include <jvmti.h>
 
 /*
  * Global pointers to the vm under control (if this pointer is NULL, there is no running vm)
@@ -37,6 +38,10 @@ JavaVM *g_vm;
  * the JNI env for the Emacs thread
  */
 JNIEnv *g_jni;
+/*
+ * the JVMTI env
+ */
+jvmtiEnv *g_jvmti;
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
@@ -80,6 +85,14 @@ int ctrl_start_java(char **err_msg)
     if (ret == JNI_OK) {
         ret = (*g_jni)->EnsureLocalCapacity(g_jni, 1000);
         assert((ret == JNI_OK) && "Workaround to have enough stack space until we manage this properly");
+
+		ret = (*g_vm)->GetEnv(g_vm, (void**) &g_jvmti, JVMTI_VERSION_1_2);
+		if (ret != JNI_OK) {
+			/* TODO: deliver this to error buffer, c.f. [YT-13] */
+			fprintf(stderr, "Failed to access JMVTI environment. JNI error code=%d", ret);
+			ret = (*g_vm)->DestroyJavaVM(g_vm);
+			assert(ret == JNI_OK);
+		}
     }
 
     return ret;

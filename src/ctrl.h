@@ -23,6 +23,7 @@
  */
 
 #include <jni.h>
+#include <jvmti.h>
 
 /*
  * Global pointers to the vm under control (if this pointer is NULL, there is no running vm)
@@ -33,6 +34,10 @@ extern JavaVM *g_vm;
  * the JNI env for the Emacs thread
  */
 extern JNIEnv *g_jni;
+/*
+ * the JVMTI env
+ */
+extern jvmtiEnv *g_jvmti;
 
 int ctrl_start_java(char **err_msg);
 
