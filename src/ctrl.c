@@ -87,20 +87,20 @@ int ctrl_start_java(char **err_msg)
 
     if (ret == JNI_OK) {
         ret = (*g_jni)->EnsureLocalCapacity(g_jni, 1000);
-        assert((ret == JNI_OK) && "Workaround to have enough stack space until we manage this properly");
+       assert((ret == JNI_OK) && "Workaround to have enough stack space until we manage this properly");
 
-		g_java_lang_Class = (*g_jni)->FindClass(g_jni, "java/lang/Class");
-		assert(g_java_lang_Class);
-		g_java_lang_String = (*g_jni)->FindClass(g_jni, "java/lang/String");
-		assert(g_java_lang_String);
+       g_java_lang_Class = (*g_jni)->FindClass(g_jni, "java/lang/Class");
+       assert(g_java_lang_Class);
+       g_java_lang_String = (*g_jni)->FindClass(g_jni, "java/lang/String");
+       assert(g_java_lang_String);
 
-		ret = (*g_vm)->GetEnv(g_vm, (void**) &g_jvmti, JVMTI_VERSION_1_2);
-		if (ret != JNI_OK) {
-			/* TODO: deliver this to error buffer, c.f. [YT-13] */
-			fprintf(stderr, "Failed to access JMVTI environment. JNI error code=%d", ret);
-			ret = (*g_vm)->DestroyJavaVM(g_vm);
-			assert(ret == JNI_OK);
-		}
+       ret = (*g_vm)->GetEnv(g_vm, (void**) &g_jvmti, JVMTI_VERSION_1_2);
+       if (ret != JNI_OK) {
+           /* TODO: deliver this to error buffer, c.f. [YT-13] */
+           fprintf(stderr, "Failed to access JMVTI environment. JNI error code=%d", ret);
+           ret = (*g_vm)->DestroyJavaVM(g_vm);
+           assert(ret == JNI_OK);
+       }
     }
 
     return ret;
