@@ -33,7 +33,7 @@ LDFLAGS = -L$(JVM_LIB_DIR)
 
 all: gargoyle-dm.so
 
-gargoyle-dm.so: src/ctrl.o src/main.o
+gargoyle-dm.so: src/class.o src/ctrl.o src/el_util.o src/main.o
 	$(LD) -shared $(LDFLAGS) -o $@ $^ -ljvm -ljsig
 
 %.o: %.c
