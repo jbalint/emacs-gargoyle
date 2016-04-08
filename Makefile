@@ -41,10 +41,10 @@ gargoyle-dm.so: src/class.o src/ctrl.o src/el_util.o src/main.o
 
 # Separate vm from no-vm tests (this requires fixed ert-runner: https://github.com/rejeep/ert-runner.el/pull/26)
 check-no-vm: gargoyle-dm.so
-	ls test/no-vm/*-test.el | EMACS=$(EMACS) xargs -n 1 cask exec ert-runner $i
+	ls test/no-vm/*-test.el | CASK_EMACS=$(EMACS) xargs -n 1 cask exec ert-runner
 
 # IF running inside emacs, INSIDE_EMACS must be UNSET for this to work (see Cask Issue #260)
 check-vm: gargoyle-dm.so
-	EMACS=$(EMACS) cask exec ert-runner -l test/start-vm.el test/*-test.el
+	CASK_EMACS=$(EMACS) cask exec ert-runner -l test/start-vm.el test/*-test.el
 
 check: check-no-vm check-vm
