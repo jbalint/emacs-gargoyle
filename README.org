@@ -114,7 +114,54 @@ Gargoyle is an Emacs module
 
 *** Mapping Return Values from Lisp Calls
 
-* Issues and Limitations
+* FAQ, Issues, Limitations
+
+** Does my Emacs build support dynamic modules?
+
+   There are several indicators:
+   + The =load-suffixes= variable will contain ".so".
+   + The =build-files= variable will contain "emacs-module.so".
+
+   Note that Emacs must be build with the =--enable-modules= option to
+   enable this feature.
+
+** "Cannot open load file: No such file or directory, gargoyle-dm"
+
+   Either your Emacs doesn't support dynamic modules or
+   =gargoyle-dm.so= is not reachable via =load-path=.
+
+** "Cannot load file /.../gargoyle-dm.so: libjvm.so: cannot open shared object file: No such file or directory"
+
+   It is assumed that the =gargoyle-dm.so= is reachable via
+   =load-path=.
+
+   If the shared library cannot be loaded into the Emacs runtime,
+   verify that the Java libraries are in =LD_LIBRARY_PATH=:
+
+#+BEGIN_SRC
+% ldd gargoyle-dm.so
+	linux-vdso.so.1 (0x00007ffd641f7000)
+	libjvm.so => not found
+	libjsig.so => not found
+% export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/amd64/server
+% ldd gargoyle-dm.so
+	linux-vdso.so.1 (0x00007ffd081f0000)
+	libjvm.so => $JAVA_HOME/jre/lib/amd64/server/libjvm.so (0x00007f719055b000)
+	libjsig.so => $JAVA_HOME/jre/lib/amd64/server/libjsig.so (0x00007f7190358000)
+	libm.so.6 => /usr/lib/libm.so.6 (0x00007f7190021000)
+	libdl.so.2 => /usr/lib/libdl.so.2 (0x00007f718fe1c000)
+	libpthread.so.0 => /usr/lib/libpthread.so.0 (0x00007f718fbff000)
+	libc.so.6 => /usr/lib/libc.so.6 (0x00007f718f85e000)
+	/usr/lib64/ld-linux-x86-64.so.2 (0x00005598ec170000)
+#+END_SRC
+
+** "Symbol's function definition is void: pcase-defmacro"
+
+   Running =cask= in a shell doesn't work properly when the
+   =INSIDE_EMACS= environment variable is set. You can unset it.
+
+   You will also have to unset =EMACS= as it will override the value
+   in the =Makefile=.
 
 * Related Links
   + The =modules/mod-test/= subdirectory in the Emacs source tree has
