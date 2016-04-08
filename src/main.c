@@ -108,16 +108,16 @@ Fgg_java_running (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *dat
 static emacs_value
 Fgg_jni_version (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
-	const char *version;
-	if (!g_vm) {
-		return env->intern (env, "nil");
-	}
-	version = ctrl_jni_version();
-	if (version) {
-		return env->make_string (env, version, strlen(version));
-	} else {
-		return env->intern (env, "nil");
-	}
+    const char *version;
+    if (!g_vm) {
+        return env->intern (env, "nil");
+    }
+    version = ctrl_jni_version();
+    if (version) {
+        return env->make_string (env, version, strlen(version));
+    } else {
+        return env->intern (env, "nil");
+    }
 }
 
 /* Provide FEATURE to Emacs.  */
@@ -168,25 +168,23 @@ Fgg_new_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
     obj = (*g_jni)->NewObject(g_jni, class, mid);
     if (handle_exception(env)) { return NULL; }
 
-    return new_java_object(env, obj);
+    return new_java_object(env, obj, class);
 }
 
 static emacs_value
 Fgg_new_string (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
-	jstring str;
-	char *raw_str;
-	ptrdiff_t str_size;
-	env->copy_string_contents(env, args[0], NULL, &str_size);
-	raw_str = malloc(str_size);
-	assert(raw_str);
-	env->copy_string_contents(env, args[0], raw_str, &str_size);
-	str = (*g_jni)->NewStringUTF(g_jni, raw_str);
-	free(raw_str); /* necessary whether there's an error or not */
-	if (handle_exception(env)) {
-		return NULL;
-	}
-	return new_java_object(env, str);
+    jstring str;
+    char *raw_str;
+    ptrdiff_t str_size;
+    env->copy_string_contents(env, args[0], NULL, &str_size);
+    raw_str = malloc(str_size);
+    assert(raw_str);
+    env->copy_string_contents(env, args[0], raw_str, &str_size);
+    str = (*g_jni)->NewStringUTF(g_jni, raw_str);
+    free(raw_str); /* necessary whether there's an error or not */
+    if (handle_exception(env)) { return NULL; }
+    return new_java_object(env, str, NULL);
 }
 
 static emacs_value
