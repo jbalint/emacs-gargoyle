@@ -39,6 +39,12 @@ extern JNIEnv *g_jni;
  */
 extern jvmtiEnv *g_jvmti;
 
+/*
+ * Some global stuff for convenience.
+ */
+extern jclass g_java_lang_Class;
+extern jclass g_java_lang_String;
+
 int ctrl_start_java(char **err_msg);
 
 void ctrl_stop_java();

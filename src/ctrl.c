@@ -43,6 +43,9 @@ JNIEnv *g_jni;
  */
 jvmtiEnv *g_jvmti;
 
+jclass g_java_lang_Class;
+jclass g_java_lang_String;
+
 jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
     return JNI_VERSION_1_8;
@@ -76,7 +79,7 @@ int ctrl_start_java(char **err_msg)
     /* options[1].optionString = "vfprintf"; */
     /* options[1].extraInfo = gg_vfprintf; */
     vm_args.version = JNI_VERSION_1_8;
-    vm_args.nOptions = 1;
+    vm_args.nOptions = sizeof(options) / sizeof(JavaVMOption);
     vm_args.options = options;
     vm_args.ignoreUnrecognized = 0;
 
@@ -85,6 +88,11 @@ int ctrl_start_java(char **err_msg)
     if (ret == JNI_OK) {
         ret = (*g_jni)->EnsureLocalCapacity(g_jni, 1000);
         assert((ret == JNI_OK) && "Workaround to have enough stack space until we manage this properly");
+
+		g_java_lang_Class = (*g_jni)->FindClass(g_jni, "java/lang/Class");
+		assert(g_java_lang_Class);
+		g_java_lang_String = (*g_jni)->FindClass(g_jni, "java/lang/String");
+		assert(g_java_lang_String);
 
 		ret = (*g_vm)->GetEnv(g_vm, (void**) &g_jvmti, JVMTI_VERSION_1_2);
 		if (ret != JNI_OK) {
