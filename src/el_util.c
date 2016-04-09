@@ -32,7 +32,9 @@
 
 #include <jni.h>
 
+#include "class.h"
 #include "ctrl.h"
+#include "el_util.h"
 
 /* finalizer needed as userptr finalizer isn't optional in dynamic modules */
 void noop_finalizer(void *x)
@@ -71,6 +73,8 @@ emacs_value list(emacs_env *env, int n, ...)
  * Check whether the `type-of' an emacs_value matches the given type.
  *
  * e.g. type_is(env, some_string, "string") => 1
+ *
+ * TODO: rename this (and other functions that push non-local exits to `assert_type', etc
  */
 int type_is(emacs_env *env, emacs_value v, const char *type_name)
 {
@@ -89,18 +93,39 @@ int type_is(emacs_env *env, emacs_value v, const char *type_name)
 /*
  * Wrap a jobject pointer to a Lisp "Java object".
  */
-emacs_value new_java_object(emacs_env *env, jobject o)
+emacs_value new_java_object(emacs_env *env, jobject o, jclass class)
 {
-    emacs_value args[1];
+    emacs_value args[2];
     emacs_value wrapped;
+    jstring class_name;
+
+    if (class == NULL) {
+        class = (*g_jni)->GetObjectClass(g_jni, o);
+        if (handle_exception(env)) { return NULL; }
+        assert(class);
+        class_name = get_class_name(env, class);
+        (*g_jni)->DeleteLocalRef(g_jni, class);
+    } else {
+        class_name = get_class_name(env, class);
+    }
+
     args[0] = env->make_user_ptr(env, noop_finalizer, o);
-    wrapped = env->funcall(env, env->intern(env, "gg--new-object"), 1, args);
+    args[1] = jstring_to_symbol(env, class_name);
+
+    (*g_jni)->DeleteLocalRef(g_jni, class_name);
+
+    wrapped = env->funcall(env, env->intern(env, "gg--new-object"), 2, args);
+    if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
+        return NULL;
+    }
+    assert(wrapped);
+
     /*
      * TODO  TODO  TODO  TODO  TODO  TODO  TODO 
      * Map the methods available on this object (and static methods if
      * it's a class) into the Lisp environment
      */
-    assert(wrapped);
+
     return wrapped;
 }
 
@@ -121,6 +146,10 @@ int jvm_running(emacs_env *env)
     return 0;
 }
 
+/*
+ * Check for JNI exceptions. If one exists, it will be "thrown" into
+ * the Emacs environment as a `java-exception' error.
+ */
 int handle_exception(emacs_env *env)
 {
     jthrowable exception;
@@ -131,8 +160,26 @@ int handle_exception(emacs_env *env)
         }
         (*g_jni)->ExceptionClear(g_jni);
         env->non_local_exit_signal(env, env->intern(env, "java-exception"),
-                                   new_java_object(env, exception));
+                                   new_java_object(env, exception, NULL));
         return 1;
     }
     return 0;
+}
+
+/*
+ * Wrap a Java string in an Emacs symbol.
+ */
+emacs_value jstring_to_symbol (emacs_env *env, jstring string)
+{
+    const char *bytes;
+    jboolean isCopy;
+    emacs_value symbol;
+
+    bytes = (*g_jni)->GetStringUTFChars(g_jni, string, &isCopy);
+    if (handle_exception(env)) { return NULL; }
+    assert(bytes);
+    symbol = env->intern(env, bytes);
+    (*g_jni)->ReleaseStringUTFChars(g_jni, string, bytes);
+
+    return symbol;
 }

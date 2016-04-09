@@ -37,9 +37,9 @@
 ;;; Commentary:
 
 ;; The Gargoyle system provides a facility for combining Java and
-;; Emacs/Elisp. This file is the Emacs side of the side. The remainder
-;; is implemented as a dynamic module (must be enabled in Emacs 25
-;; builds).
+;; Emacs/Elisp. This file is the Emacs side of the bridge. The
+;; remainder is implemented as a dynamic module (must be enabled in
+;; Emacs 25 builds).
 
 ;;; Change Log:
 
@@ -50,8 +50,8 @@
 (defvar gg-to-java-mappings nil
   "Mappings to Java objects")
 
-(defvar gg--class-hierarchy nil
-  "")
+(defvar gg--class-hierarchy (make-hash-table)
+  "Class hierarchy (c.f. internals.org)")
 
 (defun gg-objectp (object)
   "Return t if `object' is a Java object."
@@ -59,9 +59,9 @@
    (listp object)
    (eq (car object) 'gg-obj)))
 
-(defun gg--new-object (ptr)
+(defun gg--new-object (ptr class-name-sym)
   "Create a new object from a raw JNI pointer."
-  (list 'gg-obj ptr))
+  (list 'gg-obj ptr class-name-sym))
 
 (defun gg-toString (obj)
   "Return the string representation of the object."
@@ -79,6 +79,18 @@
 
 (define-error 'java-exception
   "A Java exception. The cdr is the exception.")
+
+(defun gg--class-add-by-name (class-name-sym)
+  "Add a class to the class hierarchy by providing the name of the class"
+  (unless (gethash class-name-sym gg--class-hierarchy)))
+
+(defun gg--class-add-by-obj (class))
+
+(defun gg-get-class-name (class)
+  (gg--get-class-name-raw (cadr class)))
+
+(defun gg-get-superclass (class)
+  (gg--get-superclass-raw (cadr class)))
 
 (provide 'gargoyle)
 

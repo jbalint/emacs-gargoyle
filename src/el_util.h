@@ -33,6 +33,7 @@
 void noop_finalizer(void *x);
 emacs_value list(emacs_env *env, int n, ...);
 int type_is(emacs_env *env, emacs_value v, const char *type_name);
-emacs_value new_java_object(emacs_env *env, jobject o);
+emacs_value new_java_object(emacs_env *env, jobject o, jclass class);
 int jvm_running(emacs_env *env);
 int handle_exception(emacs_env *env);
+emacs_value jstring_to_symbol (emacs_env *env, jstring string);

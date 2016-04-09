@@ -1,9 +1,18 @@
-(ert-deftest basic-class-access ()
+(ert-deftest basic-class-access-string ()
   (let* ((c (gg-find-class "java.util.ArrayList"))
+		 (c-as-string (gg-toString c))
+		 (class-name (gg-get-class-name c)))
+	(should (string-equal "class java.util.ArrayList" c-as-string))
+	(should (equal 'java.util.ArrayList class-name))))
+
+(ert-deftest basic-class-access-symbol ()
+  :expected-result :failed
+  (let* ((c (gg-find-class 'java.util.ArrayList))
 		 (c-as-string (gg-toString c)))
 	(should (string-equal "class java.util.ArrayList" c-as-string))))
 
 (ert-deftest no-class-def ()
+  (message "* The following NoClassDefError exception is expected:")
   (condition-case exc (gg-find-class "java.DoesntExist")
 	(java-exception (should (eq 'java-exception (car exc))))))
 
@@ -25,3 +34,9 @@
   (condition-case err (gg-new nil)
 	(wrong-type-argument (should (string-equal "Expected class object or class name string:"
 											   (cadr err))))))
+
+(ert-deftest get-superclass ()
+  (let* ((c (gg-find-class "java.util.ArrayList"))
+         (sc (gg-get-superclass c))
+         (sc-name (gg-get-class-name sc)))
+    (should (equal 'java.util.AbstractList sc-name))))

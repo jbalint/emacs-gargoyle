@@ -177,6 +177,9 @@ Fgg_new_string (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
     jstring str;
     char *raw_str;
     ptrdiff_t str_size;
+
+    ASSERT_JVM_RUNNING(env);
+
     env->copy_string_contents(env, args[0], NULL, &str_size);
     raw_str = malloc(str_size);
     assert(raw_str);
@@ -197,6 +200,10 @@ Fgg_toString_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *dat
     emacs_value e_string;
     const char *string;
     jboolean isCopy;
+
+    if (!type_is(env, args[0], "user-ptr")) {
+        return NULL;
+    }
 
     ASSERT_JVM_RUNNING(env);
 
@@ -232,16 +239,19 @@ emacs_module_init(struct emacs_runtime *ert)
 {
     emacs_env *env = ert->get_environment(ert);
 
-    //fprintf(stderr, "Initializing Gargoyle dynamic module\n");
     bind_function(env, "gg-java-start", env->make_function(env, 0, 0, Fgg_java_start, "Start the JVM", NULL));
     bind_function(env, "gg-java-stop", env->make_function(env, 0, 0, Fgg_java_stop, "Stop the JVM", NULL));
     bind_function(env, "gg-java-running", env->make_function(env, 0, 0, Fgg_java_running, "Is the JVM running?", NULL));
     bind_function(env, "gg-jni-version", env->make_function(env, 0, 0, Fgg_jni_version, "JNI version", NULL));
 
-    bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
     bind_function(env, "gg--toString-raw", env->make_function(env, 1, 1, Fgg_toString_raw, "Return a string representation of the raw/userptr object", NULL));
     bind_function(env, "gg--new-raw", env->make_function(env, 1, 1, Fgg_new_raw, "Create a new instance of the given class", NULL));
     bind_function(env, "gg-new-string", env->make_function(env, 1, 1, Fgg_new_string, "Create a new java.lang.String from the Lisp string", NULL));
+
+    /* from class.c */
+    bind_function(env, "gg--get-superclass-raw", env->make_function(env, 1, 1, Fgg_get_superclass_raw, "Return a Java class's superclass (nil for java.lang.Object)", NULL));
+    bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
+    bind_function(env, "gg--get-class-name-raw", env->make_function(env, 1, 1, Fgg_get_class_name_raw, "Return a Java class's name symbol", NULL));
 
     provide(env, "gargoyle-dm");
 

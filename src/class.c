@@ -31,6 +31,29 @@
 #include "ctrl.h"
 #include "el_util.h"
 
+emacs_value
+Fgg_get_superclass_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+    jclass class;
+    jclass superclass;
+
+    if (!type_is(env, args[0], "user-ptr")) {
+        return NULL;
+    }
+
+    ASSERT_JVM_RUNNING(env);
+
+    class = env->get_user_ptr(env, args[0]);
+
+    superclass = (*g_jni)->GetSuperclass(g_jni, class);
+    if (handle_exception(env)) { return NULL; }
+    if (superclass == NULL) {
+        return env->intern (env, "nil");
+    } else {
+        return new_java_object(env, superclass, NULL);
+    }
+}
+
 #define MAX_CLASS_NAME_SIZE 128
 emacs_value
 Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
@@ -70,9 +93,55 @@ Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
     }
     class = (*g_jni)->FindClass(g_jni, class_name);
     if (class) {
-        return new_java_object(env, class);
+        return new_java_object(env, class, NULL);
     } else {
         handle_exception(env);
         return NULL;
     }
+}
+
+/*
+ * Get a class's name. The returned jstring is a local reference.
+ */
+jstring get_class_name (emacs_env *env, jclass class)
+{
+    jmethodID mid_getName;
+    jstring name;
+
+    mid_getName = (*g_jni)->GetMethodID(g_jni, g_java_lang_Class, "getName", "()Ljava/lang/String;");
+    handle_exception(env);
+    assert(mid_getName);
+    if (handle_exception(env)) { assert(0);return NULL; }
+    assert(mid_getName);
+
+    name = (*g_jni)->CallObjectMethod(g_jni, class, mid_getName);
+    if (handle_exception(env)) { return NULL; }
+    assert(name);
+
+    return name;
+}
+
+emacs_value
+Fgg_get_class_name_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+    /* String object return from getName() */
+    jobject name;
+    emacs_value name_symbol;
+
+    /* TODO, we could also check the pointer is a class, otherwise
+     * GetMethodID may fail */
+
+    if (!type_is(env, args[0], "user-ptr")) {
+        return NULL;
+    }
+
+    ASSERT_JVM_RUNNING(env);
+
+    name = get_class_name(env, env->get_user_ptr(env, args[0]));
+
+    name_symbol = jstring_to_symbol(env, name);
+
+    (*g_jni)->DeleteLocalRef(g_jni, name);
+
+    return name_symbol;
 }
