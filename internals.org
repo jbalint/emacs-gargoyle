@@ -55,6 +55,13 @@ A collection of descriptions of internals.
 
   c.f. =gg-objectp=
 
+* Debugging with =gdb=
+
+  + Run Emacs under =gdb=
+  + Load/start Emacs Gargoyle
+  + Load the ert tests
+  + Run them
+
 * Glossary
 
   + *raw object* - a List =userptr= of a C =jobject=.
