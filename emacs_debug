@@ -1,0 +1,10 @@
+#!/bin/bash
+
+EBIN=/home/jbalint/sw/emacs-sw/emacs/src/emacs
+
+if [ "$1" == "--version" ] ; then
+   "$EBIN" --version
+else
+	#gdb --args "$EBIN" $*
+	gdb --args "$EBIN" -l gg_debug.el
+fi
