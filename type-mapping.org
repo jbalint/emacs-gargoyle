@@ -2,8 +2,8 @@
 
 This document describes the facility mapping types in two cases:
 + E2J (Emacs to Java) - arguments from Lisp calls to Java methods
-+ J2E (Java to Emacs) - values returned from calls to Java methods to
-  Lisp code
++ J2E (Java to Emacs) - values returned to Lisp code from calls to
+  Java methods
 
 * E2J Type Mapping
 
@@ -11,20 +11,20 @@ This document describes the facility mapping types in two cases:
 
   When calling Java methods from Lisp, the arguments can be Lisp
   values or [Lisp representations of] Java objects. The type mapping
-  determines which versions of an overloaded methods are valid for the
+  determines which versions of an overloaded method are valid for a
   given call and how Lisp values are transformed to Java objects.
 
   Given an object /o/ of type =java.util.ArrayList=, we might have a
   method call like so:
 #+BEGIN_SRC elisp
-  (/add o otherObject)
+  (/add o anotherObject)
 #+END_SRC
 
   This example is used in the following definitions.
 
   We consider the following elements of a method call:
-  + A /type mapping/ (E2J) is an entry in the =gg-to-java-mappings=
-    list
+  + A /type mapping/ (E2J) a mapping from a Lisp type to a Java type
+    + It is stored as an entry in the =gg-to-java-mappings= list
   + A /target object/ upon which a method is being called
 	+ In the example, the target object is =o=.
   + The /target type/ is the Java class of the target object
@@ -32,7 +32,7 @@ This document describes the facility mapping types in two cases:
   + The /method name/ is the name of the method being called
 	+ In the example, the method name is =add=.
   + The /argument list/ is the list of arguments to the Lisp call
-	+ In the example the argument list is =[otherObject]=.
+	+ In the example the argument list is =[anotherObject]=.
   + A set of /candidate methods/ which are associated with the target
     type corresponding to the method name begin called and arity equal
     to the length of the argument list
@@ -47,7 +47,7 @@ This document describes the facility mapping types in two cases:
      the mapping
   2. A predicate which tests whether a value can be mapped to the type
      specified by this mapping
-  3. A function (symbol or subr) which does the mapping from Lisp
+  3. A function (=symbol= or =subr=) which does the mapping from Lisp
      value to Java object
 
 ** E2J Use Cases and Examples

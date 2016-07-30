@@ -1,0 +1,8 @@
+Need ert-runner from github.com/jbalint
+
+use CASK_EMACS=x cask link ert-runner /path/to/ert-runner
+
+Need to make sure "s" is installed if you get:
+> Cannot open load file: No such file or directory, s
+
+need LD_LIBRARY_PATH=/home/jbalint/sw/java-sw/jdk8/jre/lib/amd64/server

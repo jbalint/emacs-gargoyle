@@ -122,7 +122,7 @@ Gargoyle is an Emacs module
    + The =load-suffixes= variable will contain ".so".
    + The =build-files= variable will contain "emacs-module.so".
 
-   Note that Emacs must be build with the =--enable-modules= option to
+   Note that Emacs must be built with the =--enable-modules= option to
    enable this feature.
 
 ** "Cannot open load file: No such file or directory, gargoyle-dm"
