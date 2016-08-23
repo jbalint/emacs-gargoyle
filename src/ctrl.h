@@ -38,6 +38,10 @@ extern JNIEnv *g_jni;
  * the JVMTI env
  */
 extern jvmtiEnv *g_jvmti;
+/*
+ * the JVMTI error
+ */
+extern jvmtiError g_jvmtiError;
 
 /*
  * Some global stuff for convenience.

@@ -42,6 +42,10 @@ JNIEnv *g_jni;
  * the JVMTI env
  */
 jvmtiEnv *g_jvmti;
+/*
+ * the JMVTI error
+ */
+jvmtiError g_jvmtiError;
 
 jclass g_java_lang_Class;
 jclass g_java_lang_String;

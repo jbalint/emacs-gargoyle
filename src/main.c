@@ -44,7 +44,7 @@ int plugin_is_GPL_compatible;
  * - http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4712793
  *   (JDK-4712793 : JNI : Failure in JNI_CreateJavaVM() after calling DestroyJavaVM())
  * 
- * - Looking in `jni.cpp' the "safe_to_recreate_vm" is never
+ * - Looking in `jni.cpp', we see that "safe_to_recreate_vm" is never
  *   reset. Manually doing it in GDB causes errors during VM startup
  *   like "Invalid layout of java.lang.String at value" and then a
  *   crash:
@@ -252,6 +252,7 @@ emacs_module_init(struct emacs_runtime *ert)
     bind_function(env, "gg--get-superclass-raw", env->make_function(env, 1, 1, Fgg_get_superclass_raw, "Return a Java class's superclass (nil for java.lang.Object)", NULL));
     bind_function(env, "gg-find-class", env->make_function(env, 1, 1, Fgg_find_class, "Find/load a Java class", NULL));
     bind_function(env, "gg--get-class-name-raw", env->make_function(env, 1, 1, Fgg_get_class_name_raw, "Return a Java class's name symbol", NULL));
+    bind_function(env, "gg--get-class-struct", env->make_function(env, 1, 1, Fgg_get_class_struct, "Return a Java class' structure", NULL));
 
     provide(env, "gargoyle-dm");
 

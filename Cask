@@ -3,6 +3,8 @@
 
 ;;;;(package-file "gargoyle.el")
 
+;;(depends-on "cl-lib")
+
 (development
  (depends-on "f")
  (depends-on "s")

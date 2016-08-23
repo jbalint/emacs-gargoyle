@@ -47,17 +47,50 @@
 
 (require 'gargoyle-dm)
 
+(require 'cl-lib)
+
 (defvar gg-to-java-mappings nil
   "Mappings to Java objects")
 
 (defvar gg--class-hierarchy (make-hash-table)
   "Class hierarchy (c.f. internals.org)")
 
+;; type predicates - mainly for internal use
+(defun gg--type-arrayp (type)
+  "Return t if `type' is an array type."
+  (and
+   (listp type)
+   (eq (car type) 'gg-array)))
+
+(defun gg--type-array-component (array-type)
+  "Return the component type of the given array type."
+  (if (gg--type-arrayp array-type)
+      (cdr array-type)
+    nil))
+
+(defun gg--type-primitivep (type)
+  "Return t if `type' is a primitive type."
+  (and
+   (listp type)
+   (eq (car type) 'gg-prim)))
+
+(defun gg--type-classp (type)
+  "Return t if `type' is a Java class type."
+  (eq (type-of type) 'symbol))
+
+;; object type predicates
 (defun gg-objectp (object)
   "Return t if `object' is a Java object."
   (and
    (listp object)
    (eq (car object) 'gg-obj)))
+
+(defun gg-classp (class)
+  "Return t if `class' is a Java class."
+  (and
+   (listp class)
+   (eq (car class) 'gg-obj)
+   (eq (nth 2 class) 'java.lang.Class)))
 
 (defun gg--new-object (ptr class-name-sym)
   "Create a new object from a raw JNI pointer."

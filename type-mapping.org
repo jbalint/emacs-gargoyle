@@ -27,22 +27,22 @@ This document describes the facility mapping types in two cases:
     + It is stored as an entry in the =gg-to-java-mappings= list
   + A /target object/ upon which a method is being called
 	+ In the example, the target object is =o=.
-  + The /target type/ is the Java class of the target object
-	+ In the example, the target type is =java.util.ArrayList=.
+  + The /target class/ is the Java class of the target object
+	+ In the example, the target class is =java.util.ArrayList=.
   + The /method name/ is the name of the method being called
 	+ In the example, the method name is =add=.
   + The /argument list/ is the list of arguments to the Lisp call
 	+ In the example the argument list is =[anotherObject]=.
   + A set of /candidate methods/ which are associated with the target
-    type corresponding to the method name begin called and arity equal
-    to the length of the argument list
+    class corresponding to the method name begin called and arity
+    equal to the length of the argument list
   + A /candidate list of types/ corresponding to the argument types
     declared for each candidate method
   + The /target method/ is the Java method ID of the candidate method
     that is chosen to be called
 
   The variable *=gg-to-java-mappings=* is a list detailing possible
-  mappings to a Java types. Each element is a 3-element list:
+  mappings to Java types. Each element is a 3-element list:
   1. A symbol representing the Java class of objects to be created by
      the mapping
   2. A predicate which tests whether a value can be mapped to the type
@@ -95,11 +95,11 @@ This document describes the facility mapping types in two cases:
 
 *** Building the Set of Candidate Methods
 
-	Give the target type /t/, we find all methods with a name matching
-	the method call. This is done by walking up the class hierarchy
-	from /t/. The set of methods is further reduced by removing any
-	whose arity does not match that of the argument list. The
-	remaining set are the candidate methods.
+	Give the target class /t/, we find all methods with a name
+	matching the method call. This is done by walking up the class
+	hierarchy from /t/. The set of methods is further reduced by
+	removing any whose arity does not match that of the argument
+	list. The remaining set is the set of candidate methods.
 
 **** TODO Handle varargs later
 

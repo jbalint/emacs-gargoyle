@@ -36,6 +36,11 @@
 #include "ctrl.h"
 #include "el_util.h"
 
+void delete_global_ref_finalizer(void *x)
+{
+    (*g_jni)->DeleteGlobalRef(g_jni, (jobject) x);
+}
+
 /* finalizer needed as userptr finalizer isn't optional in dynamic modules */
 void noop_finalizer(void *x)
 {
@@ -109,7 +114,10 @@ emacs_value new_java_object(emacs_env *env, jobject o, jclass class)
         class_name = get_class_name(env, class);
     }
 
-    args[0] = env->make_user_ptr(env, noop_finalizer, o);
+    o = (*g_jni)->NewGlobalRef(g_jni, o);
+    assert(o);
+
+    args[0] = env->make_user_ptr(env, delete_global_ref_finalizer, o);
     args[1] = jstring_to_symbol(env, class_name);
 
     (*g_jni)->DeleteLocalRef(g_jni, class_name);
@@ -124,6 +132,7 @@ emacs_value new_java_object(emacs_env *env, jobject o, jclass class)
      * TODO  TODO  TODO  TODO  TODO  TODO  TODO 
      * Map the methods available on this object (and static methods if
      * it's a class) into the Lisp environment
+     * [YT-28]
      */
 
     return wrapped;
@@ -167,6 +176,36 @@ int handle_exception(emacs_env *env)
 }
 
 /*
+ * Check for a JMVTI error and raise it if present
+ */
+int check_jvmti_error(emacs_env *env)
+{
+  char *errmsg = "<Unknown Error>";
+  if (g_jvmtiError != JVMTI_ERROR_NONE) {
+      (*g_jvmti)->GetErrorName(g_jvmti, g_jvmtiError, &errmsg);
+      /* we never Deallocate() the errmsg returned from JVMTI */
+
+      env->non_local_exit_signal(env, env->intern(env, "error"),
+                                 env->make_string(env, errmsg, strlen(errmsg)));
+      return 1;
+  }
+  return 0;
+}
+
+/*
+ * Get the class name as a symbol
+ */
+emacs_value jclass_to_symbol (emacs_env *env, jclass class)
+{
+    jstring class_name;
+    emacs_value class_sym;
+    class_name = get_class_name(env, class);
+    class_sym = jstring_to_symbol(env, class_name);
+    (*g_jni)->DeleteLocalRef(g_jni, class_name);
+    return class_sym;
+}
+
+/*
  * Wrap a Java string in an Emacs symbol.
  */
 emacs_value jstring_to_symbol (emacs_env *env, jstring string)
@@ -182,4 +221,44 @@ emacs_value jstring_to_symbol (emacs_env *env, jstring string)
     (*g_jni)->ReleaseStringUTFChars(g_jni, string, bytes);
 
     return symbol;
+}
+
+/*
+ * Copy a symbol's name to a string (like copy_string_contents(), but for symbols)
+ */
+bool symbol_to_string (emacs_env *env, emacs_value symbol, char *string, ptrdiff_t *size)
+{
+    emacs_value args[1];
+    emacs_value lisp_string;
+    int ok;
+    args[0] = symbol;
+    if (!type_is(env, symbol, "symbol")) {
+        assert(!"Value is not a symbol");
+    }
+    lisp_string = env->funcall(env, env->intern(env, "symbol-name"), 1, args);
+    assert(lisp_string);
+    ok = env->copy_string_contents(env, lisp_string, string, size);
+    assert(ok);
+    return true;
+}
+
+/*
+ * Get a class's name. The returned jstring is a local reference.
+ */
+jstring get_class_name (emacs_env *env, jclass class)
+{
+    jmethodID mid_getName;
+    jstring name;
+
+    mid_getName = (*g_jni)->GetMethodID(g_jni, g_java_lang_Class, "getName", "()Ljava/lang/String;");
+    handle_exception(env);
+    assert(mid_getName);
+    if (handle_exception(env)) { assert(0);return NULL; }
+    assert(mid_getName);
+
+    name = (*g_jni)->CallObjectMethod(g_jni, class, mid_getName);
+    if (handle_exception(env)) { return NULL; }
+    assert(name);
+
+    return name;
 }

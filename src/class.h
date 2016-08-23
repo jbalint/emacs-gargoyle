@@ -30,3 +30,4 @@ emacs_value Fgg_get_superclass_raw (emacs_env *env, ptrdiff_t nargs, emacs_value
 emacs_value Fgg_find_class (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data);
 jstring get_class_name (emacs_env *env, jclass class);
 emacs_value Fgg_get_class_name_raw (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data);
+emacs_value Fgg_get_class_struct (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data);

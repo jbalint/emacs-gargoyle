@@ -37,3 +37,7 @@ emacs_value new_java_object(emacs_env *env, jobject o, jclass class);
 int jvm_running(emacs_env *env);
 int handle_exception(emacs_env *env);
 emacs_value jstring_to_symbol (emacs_env *env, jstring string);
+bool symbol_to_string (emacs_env *env, emacs_value symbol, char *string, ptrdiff_t *size);
+int check_jvmti_error(emacs_env *env);
+emacs_value jclass_to_symbol (emacs_env *env, jclass class);
+jstring get_class_name (emacs_env *env, jclass class);
